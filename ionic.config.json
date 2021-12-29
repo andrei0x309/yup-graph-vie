@@ -1,0 +1,7 @@
+{
+  "name": "yup-graph-vie",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue"
+}
