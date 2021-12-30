@@ -27,11 +27,11 @@
             </ion-item>
           </ion-list>
           <ion-list v-if="lastEntries.values">
-            <ion-list-header>
-              <ion-label>Last 15 entries</ion-label>
+            <ion-list-header style="margin-bottom:2rem;">
+              <ion-label>Last <i>{{ lastNoEntries }}</i> entries</ion-label>
             </ion-list-header>
-            <ion-item>
-              <table>
+            <ion-item style="margin-bottom:2rem;">
+              <table style="width:100%">
             <tr>
                 <th>Date</th>
                 <th>User</th>
@@ -42,11 +42,59 @@
                 <th>Delete</th>
             </tr>
             <tr v-for="(value) of lastEntries.values" :key= "value.rowid">
-                <td>{{value.date}}</td>
+                <td>{{value.date_created}}</td>
                 <td>{{value.user}}</td>
                 <td>{{value.collusion_score}}</td>
+                <td>{{value.no_user_posts}}</td>
+                <td>{{value.no_user_analytics_links}}</td>
+                <td> <ion-button @click="loadGraph(value.rowid)" color="success">Load</ion-button></td>
+                <td><ion-button @click="delRowId(value.rowid)" color="danger">Delete</ion-button> </td>
               </tr>
               </table>
+            </ion-item>
+            <ion-item>
+              <ion-label style="text-align:center"> - Search - </ion-label>
+            </ion-item>
+            <ion-item>
+              <p>User: <ion-input type="text" v-model="searchUser"></ion-input></p>
+            </ion-item>
+            <ion-item>
+              <p>CollusionScore Greater than: <ion-input type="text" v-model="searchCollScore"></ion-input></p>
+              </ion-item>
+              <ion-item style="padding:1rem;">
+              <div style="width:50%">
+                Date From:
+                  <ion-item>
+                <ion-input :value="dateFrom" />
+                <ion-button fill="clear" id="open-date-input-2">
+                  <ion-icon :icon="calendar" />
+                </ion-button>
+                <ion-popover trigger="open-date-input-2" :show-backdrop="false">
+                  <ion-datetime
+                    presentation="date"
+                    @ionChange="(ev: any) => dateFrom = formatDate(ev.detail.value)"
+                  />
+                </ion-popover>
+              </ion-item>
+              </div>
+              <div style="width:50%">
+                Date To:
+                                  <ion-item>
+                <ion-input :value="dateTo" />
+                <ion-button fill="clear" id="open-date-input-2">
+                  <ion-icon :icon="calendar" />
+                </ion-button>
+                <ion-popover trigger="open-date-input-2" :show-backdrop="false">
+                  <ion-datetime
+                    presentation="date"
+                    @ionChange="(ev:any) => dateTo = formatDate(ev.detail.value)"
+                  />
+                </ion-popover>
+              </ion-item>
+              </div>
+            </ion-item>
+            <ion-item>
+              <ion-button  @click="searchDB()" color="primary"><ion-icon :icon="search"></ion-icon>Search</ion-button>
             </ion-item>
           </ion-list>
             <ion-list v-else>
@@ -173,6 +221,9 @@
 
  
 <script lang="ts">
+
+
+
 import {
   loadingController,
   //   alertController,
@@ -183,8 +234,10 @@ import {
   IonHeader,
   IonMenuButton,
   IonButtons,
-  // IonButton,
-  // IonInput,
+   IonPopover,
+   IonDatetime,
+  IonButton,
+  IonInput,
   IonLabel,
   IonList,
   IonItem,
@@ -194,7 +247,7 @@ import {
   IonListHeader,
   // IonModal,
   // IonRange,
-  // IonIcon,
+  IonIcon,
   // IonSpinner,
   // IonCard, 
   // IonCardContent,
@@ -204,19 +257,23 @@ import {
 
 
 } from '@ionic/vue';
-import { defineComponent, onMounted, Ref, ref, watch, computed, getCurrentInstance, onBeforeMount } from 'vue';
+import { defineComponent, onMounted, Ref, ref, watch,
+ //computed,
+  getCurrentInstance, onBeforeMount } from 'vue';
 import { useRoute } from 'vue-router';
 import { GRAPH_SNAPSHOTS_TABLE, DB_NAME, deleteDatabase } from '@/utils/sqLite'
-// import { thermometer, addCircle } from "ionicons/icons";
+import { calendar, search } from "ionicons/icons";
 import { SQLiteDBConnection, SQLiteHook } from 'vue-sqlite-hook/dist';
 import { capSQLiteValues } from '@capacitor-community/sqlite';
 import { showAllert } from '@/utils/ionic'
+import { format, parseISO } from 'date-fns';
 
+ 
 const local = {
   showComponent: false,
 };
 
-
+ 
 export default defineComponent({
   name: 'DB-index',
   components: {
@@ -227,8 +284,10 @@ export default defineComponent({
     IonHeader,
     IonMenuButton,
     IonButtons,
-    //          IonButton,
-    // IonInput,
+     IonPopover,
+     IonDatetime,
+    IonButton,
+    IonInput,
     IonLabel,
     IonList,
     IonItem,
@@ -238,7 +297,7 @@ export default defineComponent({
     IonListHeader,
     // IonModal,
     // IonRange,
-    // IonIcon,
+    IonIcon,
     // IonSpinner,
     //     IonCard, 
     // IonCardContent,
@@ -260,6 +319,12 @@ export default defineComponent({
     const compId: Ref = ref(route.params.id);
     let db: SQLiteDBConnection;
     const lastEntries: Ref<capSQLiteValues> = ref({});
+    const dateFrom = ref(  new Date(Date.now() - (1000 * 60 * 60 * 24 * 30)).toISOString()  );
+    const dateTo = ref( new Date().toISOString() );
+    const searchUser = ref('');
+    const searchCollScore = ref('');
+    const searchResults:  Ref<capSQLiteValues> = ref({});
+    const lastNoEntries = ref(0);
 
     // const myForceGraph = ForceGraph3D()(document.getElementById('3d-graph'))
     //   .backgroundColor('white')
@@ -307,7 +372,35 @@ export default defineComponent({
         }
       }
     }
+
+    const loadGraph =  async (id: string) => {
+      // myForceGraph.graphData(lastEntries.value);
+      // Not implemented
+    }
+
+    const searchDB = async () => {
+      const query = `SELECT * FROM ${GRAPH_SNAPSHOTS_TABLE} WHERE user LIKE '%${searchUser.value}%' AND collusionScore LIKE '%${searchCollScore.value}%' AND date BETWEEN '${dateFrom.value}' AND '${dateTo.value}' LIMIT 100 Order By date_created DESC`;
+      searchResults.value= await db.query(query);
+
+      console.log('search', searchResults.value);
+    }
+
+    const delRowId = async (id: string) => {
+      if (db) {
+        try {
+          await db.run(`DELETE FROM ${GRAPH_SNAPSHOTS_TABLE} WHERE id = ?`, [id]);
+          showAllert('success', 'Row deleted');
+        } catch (e) {
+          showAllert('error', `Row delete error: ${e}`);
+          console.log('error deleting row', e);
+        }
+      }
+    }
  
+      const formatDate = (value: string) => {
+        return format(parseISO(value), 'MMM dd yyyy');
+      };
+
     const onMountHandler = async () => {
 
       await (await loadingController.create({
@@ -315,7 +408,8 @@ export default defineComponent({
       })).present();
 
       lastEntries.value = await db.query(`SELECT rowid, user,collusion_score,no_user_posts,no_user_analytics_links,date_created  FROM ${GRAPH_SNAPSHOTS_TABLE} LIMIT 15`)
-      console.log(lastEntries.value)
+      lastNoEntries.value = (lastEntries.value.values as []).length;
+      console.log(lastEntries.value, lastNoEntries.value )
       await loadingController.dismiss();
 
     };
@@ -327,7 +421,18 @@ export default defineComponent({
       compId,
       delDB,
       local,
-      lastEntries
+      lastEntries,
+      dateFrom,
+      loadGraph,
+      delRowId,
+      dateTo,
+      formatDate,
+      searchUser,
+      searchCollScore,
+      calendar,
+      search,
+      searchDB,
+      lastNoEntries
     };
   }
 
@@ -356,7 +461,7 @@ export default defineComponent({
 }
 
 .content-wrapper {
-  max-width: 600px;
+  max-width: 800px;
   max-height: 600px;
   margin: 2rem auto 0 auto;
 }
