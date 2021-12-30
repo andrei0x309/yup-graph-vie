@@ -21,29 +21,37 @@
 
       <template v-if="local.showComponent">
         <div class="content-wrapper">
-          <ion-list>
+           <ion-list>
+            <ion-item>
+              <ion-button @click="delDB()" color="danger">Delete DB</ion-button>
+            </ion-item>
+          </ion-list>
+          <ion-list v-if="lastEntries.values">
             <ion-list-header>
               <ion-label>Last 15 entries</ion-label>
             </ion-list-header>
             <ion-item>
-              <ion-button @click="delDB()" color="danger">Delete DB</ion-button>
-            </ion-item>
-            <ion-item>
-              <!-- <table>
+              <table>
             <tr>
                 <th>Date</th>
                 <th>User</th>
                 <th>Col. Score</th>
-                <th>No posts</th>
-                <th>No links</th>
+                <th>No. posts</th>
+                <th>No. links</th>
                 <th>Load</th>
                 <th>Delete</th>
             </tr>
-            <tr v-for="(value, key) of local.last15Entries">
+            <tr v-for="(value) of lastEntries.values" :key= "value.rowid">
                 <td>{{value.date}}</td>
-                <td>{{value.time}}</td>
-                <td>{{value.value}}</td>
-              </table>-->
+                <td>{{value.user}}</td>
+                <td>{{value.collusion_score}}</td>
+              </tr>
+              </table>
+            </ion-item>
+          </ion-list>
+            <ion-list v-else>
+            <ion-item>
+              <ion-label>No entires in DB</ion-label>
             </ion-item>
           </ion-list>
         </div>
@@ -202,6 +210,7 @@ import { GRAPH_SNAPSHOTS_TABLE, DB_NAME, deleteDatabase } from '@/utils/sqLite'
 // import { thermometer, addCircle } from "ionicons/icons";
 import { SQLiteDBConnection, SQLiteHook } from 'vue-sqlite-hook/dist';
 import { capSQLiteValues } from '@capacitor-community/sqlite';
+import { showAllert } from '@/utils/ionic'
 
 const local = {
   showComponent: false,
@@ -291,33 +300,21 @@ export default defineComponent({
       if (db) {
         try {
           await deleteDatabase(db);
+          showAllert('success', 'Database deleted');
         } catch (e) {
+          showAllert('error', `Database delete error: ${e}`);
           console.log('error deleting database', e);
         }
       }
     }
-
-    // const showAllert = async (title: string, msg: string ) => {
-    //  const alert = await alertController
-    //     .create({
-    //       cssClass: 'my-custom-class',
-    //       header: 'Alert',
-    //       subHeader: title,
-    //       message: msg,
-    //       buttons: ['OK'],
-    //     });
-    //   await alert.present();
-    // }
-
-
-
+ 
     const onMountHandler = async () => {
 
       await (await loadingController.create({
         message: 'Loading...',
       })).present();
 
-      lastEntries.value = await db.query(`SELECT user,collusion_score,no_user_posts,no_user_analytics_links,date_created  FROM ${GRAPH_SNAPSHOTS_TABLE} LIMIT 15`)
+      lastEntries.value = await db.query(`SELECT rowid, user,collusion_score,no_user_posts,no_user_analytics_links,date_created  FROM ${GRAPH_SNAPSHOTS_TABLE} LIMIT 15`)
       console.log(lastEntries.value)
       await loadingController.dismiss();
 
@@ -329,7 +326,8 @@ export default defineComponent({
     return {
       compId,
       delDB,
-      local
+      local,
+      lastEntries
     };
   }
 

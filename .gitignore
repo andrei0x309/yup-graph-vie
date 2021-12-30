@@ -34,3 +34,4 @@ npm-debug.log*
 /package-lock.json
 /scrap
 /public/_headers
+/.env

@@ -42,6 +42,13 @@
 
         <div width="600" height="600" ref="graphElement" class="content-wrapper"></div>
 
+        <div v-if="selectedNode !== ''" class="content-wrapper">
+          <ion-list>
+            <ion-item>Selected Node: {{ selectedNode }}</ion-item>
+            <ion-item>Type: {{ selectedNodeType }}</ion-item>
+          </ion-list>
+        </div>
+
         <div class="content-wrapper">
           <ion-list>
             <ion-item>
@@ -91,7 +98,7 @@
           </ion-list>
         </div>
 
-        <div class="content-wrapper">
+        <div v-if="loadedLinks" class="content-wrapper">
           <ion-list>
             <ion-item>
               <ion-list style="width:100%">
@@ -170,7 +177,6 @@
 <script lang="ts">
 import {
   loadingController,
-  alertController,
   IonPage,
   IonTitle,
   IonToolbar,
@@ -210,6 +216,7 @@ import {
 }
   from '@/utils/graphV2'
 import { GRAPH_SNAPSHOTS_TABLE, DB_NAME } from '@/utils/sqLite'
+import { showAllert } from '@/utils/ionic'
 import { thermometer, addCircle } from "ionicons/icons";
 import { SQLiteDBConnection, SQLiteHook } from 'vue-sqlite-hook/dist';
 import { Capacitor } from '@capacitor/core';
@@ -285,6 +292,7 @@ export default defineComponent({
     const getAnalyticsBypassCache = ref(false);
     let currentUserData: any = null;
     let currentUserDeepData: any = null;
+    const loadedLinks = ref(false);
     const openLongLoading = ref(false);
     const collusionScore = ref(0);
     const loadingListMsgs: Ref<string[]> = ref([]);
@@ -292,6 +300,11 @@ export default defineComponent({
     const colScoreMax = 25;
     const colScoreMin = 0;
     const platform = Capacitor.getPlatform()
+    const selectedNode = ref('')
+    const selectedNodeType = ref('')
+    const selectedPrevNode = ref()
+    const selectedNodeLastColor = ref('')
+
 
 
     const computedCollusionScore = computed(() => {
@@ -304,7 +317,7 @@ export default defineComponent({
         window.location.reload()
       }
     )
-
+ 
     onBeforeMount(async () => {
       const ret = await sqlite.checkConnectionsConsistency();
       const isConn = (await sqlite.isConnection(DB_NAME)).result;
@@ -317,19 +330,7 @@ export default defineComponent({
       console.log('db', db);
     })
 
-
-    const showAllert = async (title: string, msg: string) => {
-      const alert = await alertController
-        .create({
-          cssClass: 'my-custom-class',
-          header: 'Alert',
-          subHeader: title,
-          message: msg,
-          buttons: ['OK'],
-        });
-      await alert.present();
-    }
-
+  
     const toggleSwitch = (switchEl: string) => {
       switch (switchEl) {
         case 'getVotesBypassCache':
@@ -363,10 +364,16 @@ export default defineComponent({
         const userData = await getSingleUserData(currentUser.value, Number(userVotesLimit.value), getVotesBypassCache.value)
         currentUserData = await generateData(userData);
         graph.value.graphData(currentUserData);
+        loadedLinks.value = true;
       } catch (e) {
         console.log(e);
         await showAllert('Error', 'User not found');
       }
+
+      graph.value.cameraPosition(
+        { x: 0, y: 0, z: currentUserData.nodes.length * 1.5 },
+        0, 2000)
+
       await loadingController.dismiss();
     };
 
@@ -394,6 +401,9 @@ export default defineComponent({
         currentUserDeepData = await getUserDeepData(currentUserData, Number(userNoDeepLimit.value), getAnalyticsBypassCache.value, loadingCallback as () => void)
         graph.value.graphData(currentUserDeepData);
         collusionScore.value = calcuateCollusionScore(currentUserDeepData);
+        graph.value.cameraPosition(
+          { x: 0, y: 0, z: currentUserDeepData.nodes.length * 1.5 },
+          0, 2000)
       } catch (e) {
         console.log(e);
         await showAllert('Error', 'Error fetching deep data');
@@ -424,6 +434,36 @@ export default defineComponent({
       await loadingController.dismiss();
     }
 
+    const setSelectedNode = (node: any) => {
+      if (selectedNode.value !== node.id) {
+
+        if (selectedNode.value !== '') {
+          if (selectedPrevNode.value)
+            selectedPrevNode.value.color = selectedNodeLastColor.value;
+        }
+
+        selectedNodeLastColor.value = node.color;
+        const distance = 80;
+        const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+        graph.value.cameraPosition(
+          { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+          node, 800)
+        selectedNode.value = node.id;
+        node.color = "#00ff00";
+        graph.value.nodeColor(graph.value.nodeColor())
+        selectedPrevNode.value = node;
+        selectedNodeType.value = node.group;
+      } else {
+        selectedNode.value = '';
+        graph.value.cameraPosition(
+          { x: Math.abs(0 - node.x), y: (0 - node.y), z: 500 },
+          node, 1200)
+        node.color = selectedNodeLastColor.value;
+        graph.value.nodeColor(graph.value.nodeColor())
+      }
+
+    }
+
     const onMountHandler = async () => {
 
       await (await loadingController.create({
@@ -439,6 +479,9 @@ export default defineComponent({
         .nodeLabel('id')
         .nodeColor(d => (d as any).color)
         .linkColor('#0f0f0f')
+        .onNodeClick(node => {
+          setSelectedNode(node as any);
+        })
 
       await loadingController.dismiss();
 
@@ -467,7 +510,10 @@ export default defineComponent({
       addToDB,
       colScoreMin,
       colScoreMax,
-      local
+      local,
+      selectedNode,
+      selectedNodeType,
+      loadedLinks
     };
   }
 
