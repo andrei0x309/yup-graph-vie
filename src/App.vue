@@ -32,7 +32,7 @@
 
 <script lang="ts">
 import { IonApp, IonContent, IonIcon, IonItem, IonLabel, IonList, IonListHeader, IonMenu, IonMenuToggle, IonNote, IonRouterOutlet, IonSplitPane } from '@ionic/vue';
-import { defineComponent, ref, getCurrentInstance } from 'vue';
+import { defineComponent, ref, getCurrentInstance, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { settings, cube } from 'ionicons/icons';
 import { useSQLite } from 'vue-sqlite-hook';
@@ -76,9 +76,9 @@ export default defineComponent({
     const contentMessage = app?.appContext.config.globalProperties.$messageContent;
     const jsonListeners = app?.appContext.config.globalProperties.$isJsonListeners;
 
-    const path = window.location.pathname.split('server/')[1];
+    const path = window.location.pathname.split('graph/')[1];
     if (path !== undefined) {
-      selectedIndex.value = appPages.findIndex(page => page.url.split('server/')[1].toLowerCase() === path.toLowerCase());
+      selectedIndex.value = appPages.findIndex(page => page.url.split('graph/')[1].toLowerCase() === path.toLowerCase());
     }
 
     const route = useRoute();
@@ -103,6 +103,14 @@ export default defineComponent({
         onProgressExport
       });
     }
+
+      watch(
+      () => route.path,
+      async () => {
+       const path = window.location.pathname.split('graph/')[1].split('/')[0];
+       selectedIndex.value = appPages.findIndex(page => page.url.split('graph/')[1].toLowerCase() === path.toLowerCase());
+      }
+    )
 
     return {
       selectedIndex,

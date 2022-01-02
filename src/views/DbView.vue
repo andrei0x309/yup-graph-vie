@@ -267,7 +267,8 @@ import { SQLiteDBConnection, SQLiteHook } from 'vue-sqlite-hook/dist';
 import { capSQLiteValues } from '@capacitor-community/sqlite';
 import { showAllert } from '@/utils/ionic'
 import { format, parseISO } from 'date-fns';
-
+import router from '@/router';
+import { Capacitor } from '@capacitor/core';
  
 const local = {
   showComponent: false,
@@ -313,6 +314,7 @@ export default defineComponent({
   },
   setup () {
 
+    const platform = Capacitor.getPlatform()
     const app = getCurrentInstance()
     const route = useRoute();
     const sqlite: SQLiteHook = app?.appContext.config.globalProperties.$sqlite;
@@ -374,12 +376,15 @@ export default defineComponent({
     }
 
     const loadGraph =  async (id: string) => {
-      // myForceGraph.graphData(lastEntries.value);
-      // Not implemented
+      router.push(`/graph/index/${id}`)
     }
 
     const searchDB = async () => {
-      const query = `SELECT * FROM ${GRAPH_SNAPSHOTS_TABLE} WHERE user LIKE '%${searchUser.value}%' AND collusionScore LIKE '%${searchCollScore.value}%' AND date BETWEEN '${dateFrom.value}' AND '${dateTo.value}' LIMIT 100 Order By date_created DESC`;
+      const userQuery = searchUser.value ? ` user LIKE '%${searchUser.value}%'` : '';
+      const collScoreQuery = searchCollScore.value ? userQuery ? ` AND collusion_score >= '${searchCollScore.value}'`:  ` collusion_score >= '${searchCollScore.value}'` : '';
+      const dateFromQuery = dateFrom.value && dateTo.value ? userQuery || collScoreQuery ? ` AND date_created BETWEEN '${dateFrom.value}' AND '${dateTo.value}' ` : ` date_created BETWEEN '${dateFrom.value}' AND '${dateTo.value}' ` : '';
+
+      const query = `SELECT * FROM ${GRAPH_SNAPSHOTS_TABLE} WHERE  ${userQuery}${collScoreQuery}${dateFromQuery}  Order By date_created DESC LIMIT 100 `;
       searchResults.value= await db.query(query);
 
       console.log('search', searchResults.value);
@@ -388,8 +393,13 @@ export default defineComponent({
     const delRowId = async (id: string) => {
       if (db) {
         try {
-          await db.run(`DELETE FROM ${GRAPH_SNAPSHOTS_TABLE} WHERE id = ?`, [id]);
+          await db.run(`DELETE FROM ${GRAPH_SNAPSHOTS_TABLE} WHERE rowid = ?`, [id]);
+          lastEntries.value.values = lastEntries.value.values?.filter(e => e.rowid !== id);
+          lastNoEntries.value = lastEntries.value.values?.length || 0;
           showAllert('success', 'Row deleted');
+        if (platform === 'web') {
+          await sqlite.saveToStore(DB_NAME)
+        }
         } catch (e) {
           showAllert('error', `Row delete error: ${e}`);
           console.log('error deleting row', e);

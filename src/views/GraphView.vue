@@ -19,7 +19,6 @@
         </ion-toolbar>
       </ion-header>
 
-      <template v-if="local.showComponent">
         <ion-modal
           :is-open="openLongLoading"
           :swipe-to-close="true"
@@ -167,7 +166,6 @@
             </ion-item>
           </ion-list>
         </div>
-      </template>
     </ion-content>
   </ion-page>
 </template>
@@ -370,9 +368,11 @@ export default defineComponent({
         await showAllert('Error', 'User not found');
       }
 
+      if(currentUserData){
       graph.value.cameraPosition(
         { x: 0, y: 0, z: currentUserData.nodes.length * 1.5 },
         0, 2000)
+      }
 
       await loadingController.dismiss();
     };
@@ -416,12 +416,32 @@ export default defineComponent({
       }
     }
 
+    const deGraph = (data: any) =>{
+          const degraphLinks = (e: any) => {
+            if(typeof e.source === 'string'){
+              return { source: e.source, target: e.target}
+            }
+            return { source: e.source.id, target: e.target.id}
+          }
+          return { nodes:data.nodes.map( (e:any) => ({ id:e.id, group:e.group, color:e.color, ...(e.postId && {postId: e.postId }) })), links: data.links.map( degraphLinks ) }
+    }
+
     const addToDB = async () => {
       await (await loadingController.create({
         message: 'Loading...',
       })).present();
+ 
+      if( !currentUserData || !currentUserDeepData || !currentUser.value  ){
+        await loadingController.dismiss();
+        await showAllert('Error', 'You first need to generate the date in order to load it!');
+        return;
+      }
+
+      
       const sqlcmd = `INSERT INTO ${GRAPH_SNAPSHOTS_TABLE} (user, graph_user_links, graph_user_analytics, collusion_score, no_user_posts, no_user_analytics_links, date_created ) VALUES (?,?,?,?,?,?,?)`;
-      const values: Array<any> = [currentUser.value, JSON.stringify(currentUserData), JSON.stringify(currentUserDeepData), collusionScore.value, currentUserData.nodes.length - 1, currentUserDeepData.links.length, new Date().toISOString()];
+      
+      
+      const values: Array<any> = [currentUser.value, JSON.stringify(deGraph(currentUserData)), JSON.stringify(deGraph(currentUserDeepData)), collusionScore.value, currentUserData.nodes.length - 1, currentUserDeepData.links.length, new Date().toISOString()];
       try {
         await db.run(sqlcmd, values);
         if (platform === 'web') {
@@ -477,12 +497,14 @@ export default defineComponent({
           currentUser.value = dataToLoad.user;
           currentUserData = JSON.parse(dataToLoad.graph_user_links);
           currentUserDeepData = JSON.parse(dataToLoad.graph_user_analytics);
+          console.log(currentUserDeepData)
           collusionScore.value = dataToLoad.collusion_score;
-          userVotesLimit.value = dataToLoad.no_user_posts;
-          userNoDeepLimit.value = dataToLoad.no_user_analytics_links;
-          graph.value.graphData(currentUserData);
+          userVotesLimit.value = String(dataToLoad.no_user_posts + 1);
+          const strLimitLinks = String(dataToLoad.no_user_analytics_links);
+          userNoDeepLimit.value =  `${strLimitLinks.substring(0,1)}000`;
+          graph.value.graphData(currentUserDeepData);
           graph.value.cameraPosition(
-            { x: 0, y: 0, z: currentUserData.nodes.length * 1.5 },
+            { x: 0, y: 0, z: currentUserDeepData.nodes.length * 1.5 },
             0, 2000)
           loadedLinks.value = true;
         }
@@ -490,7 +512,6 @@ export default defineComponent({
         console.log(e);
         await showAllert('Error', 'Error loading data from DB');
       }
-      await loadingController.dismiss();
     }
 
     const onMountHandler = async () => {
@@ -498,8 +519,9 @@ export default defineComponent({
       await (await loadingController.create({
         message: 'Loading...',
       })).present();
-
-      graph.value = ForceGraph3D()(graphElement.value as HTMLElement)
+      
+          try{
+            graph.value = ForceGraph3D()(graphElement.value as HTMLElement)
         .backgroundColor('#222')
         .width(600)
         .height(600)
@@ -511,7 +533,15 @@ export default defineComponent({
         .onNodeClick(node => {
           setSelectedNode(node as any);
         })
+        console.log(graphElement.value)
+        await new Promise(r => setTimeout(r, 1000));
+          } catch(e) {
+             console.log(graphElement.value)
+            console.log(e)
+          }
 
+      
+    
       if (route.params.rowid) {
         await loadDataFromDB(route.params.rowid as string);
       }
