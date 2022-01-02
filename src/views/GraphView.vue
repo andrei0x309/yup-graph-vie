@@ -464,6 +464,35 @@ export default defineComponent({
 
     }
 
+    const loadDataFromDB = async (rowid: string) => {
+ 
+      const sqlcmd = `SELECT * FROM ${GRAPH_SNAPSHOTS_TABLE} WHERE rowid = ? ORDER BY date_created DESC LIMIT 1`;
+ 
+      try {
+        const data = await db.query(sqlcmd, [rowid]);
+        console.log(data);
+        
+        if ((data.values as Array<any>).length > 0) {
+          const dataToLoad = (data.values  as Array<any>)[0];
+          currentUser.value = dataToLoad.user;
+          currentUserData = JSON.parse(dataToLoad.graph_user_links);
+          currentUserDeepData = JSON.parse(dataToLoad.graph_user_analytics);
+          collusionScore.value = dataToLoad.collusion_score;
+          userVotesLimit.value = dataToLoad.no_user_posts;
+          userNoDeepLimit.value = dataToLoad.no_user_analytics_links;
+          graph.value.graphData(currentUserData);
+          graph.value.cameraPosition(
+            { x: 0, y: 0, z: currentUserData.nodes.length * 1.5 },
+            0, 2000)
+          loadedLinks.value = true;
+        }
+      } catch (e) {
+        console.log(e);
+        await showAllert('Error', 'Error loading data from DB');
+      }
+      await loadingController.dismiss();
+    }
+
     const onMountHandler = async () => {
 
       await (await loadingController.create({
@@ -482,6 +511,11 @@ export default defineComponent({
         .onNodeClick(node => {
           setSelectedNode(node as any);
         })
+
+      if (route.params.rowid) {
+        await loadDataFromDB(route.params.rowid as string);
+      }
+
 
       await loadingController.dismiss();
 

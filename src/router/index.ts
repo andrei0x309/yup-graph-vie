@@ -11,6 +11,10 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/GraphView.vue')
   },
   {
+    path: '/graph/index/:rowid',
+    component: () => import('@/views/GraphView.vue')
+  },
+  {
     path: '/graph/db',
     component: () => import('@/views/DbView.vue')
   },
