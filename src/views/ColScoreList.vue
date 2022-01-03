@@ -1,6 +1,3 @@
-
-
- 
 <template>
   <ion-page :key="compId" style="margin-bottom: 2rem;">
     <ion-header :translucent="true">
@@ -18,13 +15,9 @@
           <ion-title size="large">{{ $route.params.id }}</ion-title>
         </ion-toolbar>
       </ion-header>
-
-        <ion-modal
-          :is-open="openLongLoading"
-          :swipe-to-close="true"
-          :presenting-element="($parent as any).$refs.ionRouterOutlet"
-        >
-          <ion-content>
+ 
+        <div v-if="openLongLoading" class="content-wrapper">
+             <ion-content>
             <ion-list>
               <ion-item>
                 <ion-label>Loading</ion-label>
@@ -32,34 +25,74 @@
               <ion-item>
                 <ion-spinner name="crescent"></ion-spinner>
               </ion-item>
-              <ion-item v-for="(value, key) of loadingListMsgs" :key="key">
-                <ion-label>{{ value }}</ion-label>
+              <ion-item>
+               <ion-label> User {{ }} out of {{ }} </ion-label>
+              </ion-item>
+               <ion-item>
+               <ion-label> Current User: {{ currentUser  }} </ion-label>
               </ion-item>
             </ion-list>
           </ion-content>
-        </ion-modal>
-
-        <div width="600" height="600" ref="graphElement" class="content-wrapper"></div>
-
-        <div v-if="selectedNode !== ''" class="content-wrapper">
-          <ion-list>
-            <ion-item>Selected Node: {{ selectedNode }}</ion-item>
-            <ion-item>Type: {{ selectedNodeType }}</ion-item>
-          </ion-list>
         </div>
 
+        <div v-if="userColScores.length" class="content-wrapper">
+             <ion-content>
+            <ion-list>
+              <ion-item>
+                <ion-label>Results</ion-label>
+              </ion-item>
+              <ion-item v-for="user of userColScores" :key="user.user">
+               <ion-label><b>User:</b> {{ user.user }} ; <b>CScore:</b> {{ user.cscore }}  </ion-label>
+              </ion-item>
+               <ion-item>
+              <ion-button @click="addToDB()">
+                <ion-icon :icon="addCircle"></ion-icon>ADD this result to Database
+              </ion-button>
+              </ion-item>
+            </ion-list>
+          </ion-content>
+        </div>
+ 
         <div class="content-wrapper">
           <ion-list>
             <ion-item>
               <ion-list style="width:100%">
                 <ion-item>
-                  <ion-label>Get Last Votes:</ion-label>
+                  <ion-label style="text-align:center">Calculate collusion score for userlist:</ion-label>
                 </ion-item>
+                      <ion-item>
+                         <ion-grid>
+              <ion-row>
+                <ion-col>
+                  <ion-item>
+                    <ion-label style="text-align:center">Input users separated by comma</ion-label>
+                  </ion-item>
+                </ion-col>
+              </ion-row>
+              <ion-row>
+                <ion-col>
+                    <ion-item>
+                      <ion-input v-model="userList" type="text"></ion-input>
+                    </ion-item>
+                </ion-col>
+                 <ion-col>
+<ion-button @click="startProcess()" :disabled="processStarted" color="success">Start</ion-button>
+                </ion-col>
+                                 <ion-col>
+<ion-button @click="isPaused ? resumeProcess() : pauseProcess()" :color=" isPaused ? 'warning' : 'primary'">Pause</ion-button>
+                </ion-col>
+                                 <ion-col>
+<ion-button @click="cancelProcess()" :disabled="!processStarted" color="danger">Cancel</ion-button>
+                </ion-col>
+              </ion-row>
+            </ion-grid>
+                </ion-item>
+
                 <ion-item>
                   <ion-list>
                     <ion-radio-group v-model="userVotesLimit">
                       <ion-list-header>
-                        <ion-label>Number of Votes:</ion-label>
+                        <ion-label>Number of Votes for each Users:</ion-label>
                       </ion-list-header>
 
                       <ion-item>
@@ -79,31 +112,7 @@
                     </ion-radio-group>
                   </ion-list>
                 </ion-item>
-                <ion-item>
-                  User:&nbsp;&nbsp;
-                  <ion-input v-model="currentUser" :value="currentUser" type="text"></ion-input>
-                  <ion-button @click="graphFetchCurrentUser()" color="warning">Get data</ion-button>
-                </ion-item>
-              </ion-list>
-            </ion-item>
-
-            <ion-item>
-              <ion-label>Bypass Cache</ion-label>
-              <ion-toggle
-                @IonChange="toggleSwitch('getVotesBypassCache')"
-                :checked="getVotesBypassCache"
-              ></ion-toggle>
-            </ion-item>
-          </ion-list>
-        </div>
-
-        <div v-if="loadedLinks" class="content-wrapper">
-          <ion-list>
-            <ion-item>
-              <ion-list style="width:100%">
-                <ion-item>
-                  <ion-label>Analyze User: {{ currentUser }}</ion-label>
-                </ion-item>
+                
                 <ion-item>
                   <ion-list>
                     <ion-radio-group v-model="userNoDeepLimit">
@@ -128,6 +137,22 @@
                     </ion-radio-group>
                   </ion-list>
                 </ion-item>
+                
+              </ion-list>
+            </ion-item>
+
+ 
+          </ion-list>
+        </div>
+
+        <!-- <div v-if="loadedLinks" class="content-wrapper">
+          <ion-list>
+            <ion-item>
+              <ion-list style="width:100%">
+                <ion-item>
+                  <ion-label>Analyze User: {{ currentUser }}</ion-label>
+                </ion-item>
+                
                 <ion-item>
                   User:&nbsp;&nbsp;{{ currentUser }}&nbsp;&nbsp;
                   <ion-button @click="graphFetchUserDeepData()" color="warning">Get Data</ion-button>
@@ -161,11 +186,11 @@
             </ion-item>
             <ion-item>
               <ion-button @click="addToDB()">
-                <ion-icon :icon="addCircle"></ion-icon>ADD this SnapShot to database
+                <ion-icon :icon="addCircle"></ion-icon>ADD this Snappost to database
               </ion-button>
             </ion-item>
           </ion-list>
-        </div>
+        </div> -->
     </ion-content>
   </ion-page>
 </template>
@@ -187,13 +212,13 @@ import {
   IonLabel,
   IonList,
   IonItem,
-  IonToggle,
+  // IonToggle,
   IonRadioGroup,
   IonRadio,
   IonListHeader,
-  IonModal,
-  IonRange,
-  IonIcon,
+  // IonModal,
+  // IonRange,
+  // IonIcon,
   IonSpinner,
   // IonCard, 
   // IonCardContent,
@@ -205,7 +230,6 @@ import {
 } from '@ionic/vue';
 import { defineComponent, onMounted, Ref, ref, watch, computed, getCurrentInstance, onBeforeMount } from 'vue';
 import { useRoute } from 'vue-router';
-import ForceGraph3D from '3d-force-graph';
 import {
   getSingleUserData,
   generateData,
@@ -239,13 +263,13 @@ export default defineComponent({
     IonLabel,
     IonList,
     IonItem,
-    IonToggle,
+    // IonToggle,
     IonRadioGroup,
     IonRadio,
     IonListHeader,
-    IonModal,
-    IonRange,
-    IonIcon,
+    // IonModal,
+    // IonRange,
+    // IonIcon,
     IonSpinner,
     //     IonCard, 
     // IonCardContent,
@@ -266,42 +290,31 @@ export default defineComponent({
     const sqlite: SQLiteHook = app?.appContext.config.globalProperties.$sqlite;
     let db: SQLiteDBConnection;
 
-    // const myForceGraph = ForceGraph3D()(document.getElementById('3d-graph'))
-    //   .backgroundColor('white')
-    //   .linkColor(() => '#0f0f0f') //Not working?
-    //   .nodeOpacity(1)
-    //   .height(document.getElementsByClassName('right')[0].offsetHeight)
-    //   .width(document.getElementsByClassName('right')[0].offsetWidth)
-    //   .nodeLabel('id')
-    //   .nodeColor(d => d.color)
-    //   .onNodeClick(node => {
-    //     getCorrespondingNodes(node);
-    //   })
-    //   .onNodeRightClick(node => {
-    //     addSelectNode(node);
-    //   });
-
-    const graphElement = ref<HTMLDivElement>();
-    const graph: Ref = ref(null);
-    const currentUser = ref('');
+    const userList = ref('');
     const userVotesLimit = ref('100');
     const userNoDeepLimit = ref('1000');
     const getVotesBypassCache = ref(false);
     const getAnalyticsBypassCache = ref(false);
     let currentUserData: any = null;
     let currentUserDeepData: any = null;
-    const loadedLinks = ref(false);
     const openLongLoading = ref(false);
+    const isPaused = ref(false);
     const collusionScore = ref(0);
-    const loadingListMsgs: Ref<string[]> = ref([]);
+    const userColScores: Ref<Record<string, number | string>[]> = ref([]);
     const compId: Ref = ref(route.params.id);
-    const colScoreMax = 25;
-    const colScoreMin = 0;
+    const usersNo = ref(0);
+    const currentUser = ref('');
+    const usersProcessed = ref(0);
+    const processStarted = ref(false);
     const platform = Capacitor.getPlatform()
-    const selectedNode = ref('')
-    const selectedNodeType = ref('')
-    const selectedPrevNode = ref()
-    const selectedNodeLastColor = ref('')
+    
+    // const colScoreMax = 25;
+    // const colScoreMin = 0;
+    //
+    // const selectedNode = ref('')
+    // const selectedNodeType = ref('')
+    // const selectedPrevNode = ref()
+    // const selectedNodeLastColor = ref('')
 
 
 
@@ -316,7 +329,6 @@ export default defineComponent({
       }
     )
 
-    const getClosest =  (num: number, arr: number[]) => arr.reduce((prev: number, curr: number) => Math.abs(curr - num) < Math.abs(prev - num) ? curr : prev);
  
     onBeforeMount(async () => {
       const ret = await sqlite.checkConnectionsConsistency();
@@ -329,94 +341,106 @@ export default defineComponent({
       await db.open();
       console.log('db', db);
     })
+ 
+    // const loadingCallback = (msg: string): void => {
+    //   if (loadingListMsgs.value.length > 10) {
+    //     loadingListMsgs.value.shift();
+    //     loadingListMsgs.value.push(msg as string);
+    //   } else {
+    //     loadingListMsgs.value.push(msg as string);
+    //   }
+    // }
+ 
+    const startProcess = async () => {
+      
+      openLongLoading.value = true;
+      processStarted.value = true;
 
-  
-    const toggleSwitch = (switchEl: string) => {
-      switch (switchEl) {
-        case 'getVotesBypassCache':
-          getVotesBypassCache.value = !getVotesBypassCache.value;
-          break;
-        case 'getAnalyticsBypassCache':
-          getAnalyticsBypassCache.value = !getAnalyticsBypassCache.value;
-          break;
-        default:
-          break;
-      }
-    }
-
-    const loadingCallback = (msg: string): void => {
-      if (loadingListMsgs.value.length > 10) {
-        loadingListMsgs.value.shift();
-        loadingListMsgs.value.push(msg as string);
-      } else {
-        loadingListMsgs.value.push(msg as string);
-      }
-    }
-
-
-
-    const graphFetchCurrentUser = async () => {
-      await (await loadingController.create({
-        message: 'Loading...',
-      })).present();
+      const users = userList.value.split(',').map(el => el.trim());
+      usersNo.value = users.length;
+      for ( const user of users ) {
       try {
-        console.log(getVotesBypassCache.value)
-        const userData = await getSingleUserData(currentUser.value, Number(userVotesLimit.value), getVotesBypassCache.value)
-        currentUserData = await generateData(userData);
-        graph.value.graphData(currentUserData);
-        loadedLinks.value = true;
+        currentUser.value = user;
+        const userData = await getSingleUserData(user, Number(userVotesLimit.value), getVotesBypassCache.value);
+        const linksData = await getUserDeepData(await generateData(userData), Number(userNoDeepLimit.value), getAnalyticsBypassCache.value)
+         calcuateCollusionScore(linksData);
+
+         userColScores.value.push({
+          user,
+          cscore: collusionScore.value
+         })
+         userList.value = userList.value.split(',').filter(el => el !== user).join(',');
+         usersProcessed.value++;
       } catch (e) {
-        console.log(e);
-        await showAllert('Error', 'User not found');
+        userColScores.value.push({
+          user,
+          cscore: 'User not found'
+         })
       }
-
-      if(currentUserData){
-      graph.value.cameraPosition(
-        { x: 0, y: 0, z: currentUserData.nodes.length * 1.5 },
-        0, 2000)
       }
+      openLongLoading.value = false;
+    };
 
+
+    const pauseProcess = async () => {
+      await (await loadingController.create({
+        message: 'Pausing...',
+      })).present();
       await loadingController.dismiss();
     };
 
-    const graphFetchUserDeepData = async () => {
-
-      if (currentUser.value === '' || currentUserData === null) {
-        await showAllert('Error', 'You first need to get some links for a user');
-        return;
-      }
-
+    const resumeProcess = async () => {
       await (await loadingController.create({
-        message: 'Loading...',
+        message: 'Resuming...',
       })).present();
+      await loadingController.dismiss();
+    };
 
-      const isTakeingLong = setTimeout(async () => {
-        openLongLoading.value = true;
-        try {
-          await loadingController.dismiss();
-        } catch (e) {
-          e
-        }
-      }, 150);
+    const cancelProcess = async () => {
+      await (await loadingController.create({
+        message: 'Cancelling...',
+      })).present();
+      await loadingController.dismiss();
+    };
 
-      try {
-        currentUserDeepData = await getUserDeepData(currentUserData, Number(userNoDeepLimit.value), getAnalyticsBypassCache.value, loadingCallback as () => void)
-        graph.value.graphData(currentUserDeepData);
-        collusionScore.value = calcuateCollusionScore(currentUserDeepData);
-        graph.value.cameraPosition(
-          { x: 0, y: 0, z: currentUserDeepData.nodes.length * 1.5 },
-          0, 2000)
-      } catch (e) {
-        console.log(e);
-        await showAllert('Error', 'Error fetching deep data');
-      } finally {
-        openLongLoading.value = false;
-        try {
-          loadingController.dismiss().then().catch(e => e);
-          clearTimeout(isTakeingLong);
-        } catch (e) { e }
-      }
-    }
+    // const graphFetchUserDeepData = async () => {
+
+    //   if (currentUser.value === '' || currentUserData === null) {
+    //     await showAllert('Error', 'You first need to get some links for a user');
+    //     return;
+    //   }
+
+    //   await (await loadingController.create({
+    //     message: 'Loading...',
+    //   })).present();
+
+    //   const isTakeingLong = setTimeout(async () => {
+    //     openLongLoading.value = true;
+    //     try {
+    //       await loadingController.dismiss();
+    //     } catch (e) {
+    //       e
+    //     }
+    //   }, 150);
+
+    //   try {
+    //     currentUserDeepData = 
+    //     graph.value.graphData(currentUserDeepData);
+    //     collusionScore.value =
+    //     graph.value.cameraPosition(
+    //       { x: 0, y: 0, z: currentUserDeepData.nodes.length * 1.5 },
+    //       0, 2000)
+    //   } catch (e) {
+    //     console.log(e);
+    //     await showAllert('Error', 'Error fetching deep data');
+    //   } finally {
+    //     openLongLoading.value = false;
+    //     try {
+    //       loadingController.dismiss().then().catch(e => e);
+    //       clearTimeout(isTakeingLong);
+    //     } catch (e) { e }
+    //   }
+    // }
 
     const deGraph = (data: any) =>{
           const degraphLinks = (e: any) => {
@@ -456,98 +480,14 @@ export default defineComponent({
       await loadingController.dismiss();
     }
 
-    const setSelectedNode = (node: any) => {
-      if (selectedNode.value !== node.id) {
-
-        if (selectedNode.value !== '') {
-          if (selectedPrevNode.value)
-            selectedPrevNode.value.color = selectedNodeLastColor.value;
-        }
-
-        selectedNodeLastColor.value = node.color;
-        const distance = 80;
-        const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
-        graph.value.cameraPosition(
-          { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
-          node, 800)
-        selectedNode.value = node.id;
-        node.color = "#00ff00";
-        graph.value.nodeColor(graph.value.nodeColor())
-        selectedPrevNode.value = node;
-        selectedNodeType.value = node.group;
-      } else {
-        selectedNode.value = '';
-        graph.value.cameraPosition(
-          { x: Math.abs(0 - node.x), y: (0 - node.y), z: 500 },
-          node, 1200)
-        node.color = selectedNodeLastColor.value;
-        graph.value.nodeColor(graph.value.nodeColor())
-      }
-
-    }
-
-    const loadDataFromDB = async (rowid: string) => {
  
-      const sqlcmd = `SELECT * FROM ${GRAPH_SNAPSHOTS_TABLE} WHERE rowid = ? ORDER BY date_created DESC LIMIT 1`;
- 
-      try {
-        const data = await db.query(sqlcmd, [rowid]);
-        console.log(data);
-        
-        if ((data.values as Array<any>).length > 0) {
-          const dataToLoad = (data.values  as Array<any>)[0];
-          currentUser.value = dataToLoad.user;
-          currentUserData = JSON.parse(dataToLoad.graph_user_links);
-          currentUserDeepData = JSON.parse(dataToLoad.graph_user_analytics);
-          console.log(currentUserDeepData)
-          collusionScore.value = dataToLoad.collusion_score;
-          userVotesLimit.value = String(getClosest(Number(dataToLoad.no_user_posts), [100, 200, 300]));
-          userNoDeepLimit.value =  String(getClosest(Number(dataToLoad.no_user_analytics_links), [1000, 2500, 5000]));
-          graph.value.graphData(currentUserDeepData);
-          graph.value.cameraPosition(
-            { x: 0, y: 0, z: currentUserDeepData.nodes.length * 1.5 },
-            0, 2000)
-          loadedLinks.value = true;
-        }
-      } catch (e) {
-        console.log(e);
-        await showAllert('Error', 'Error loading data from DB');
-      }
-    }
-
     const onMountHandler = async () => {
 
       await (await loadingController.create({
         message: 'Loading...',
       })).present();
       
-          try{
-            graph.value = ForceGraph3D()(graphElement.value as HTMLElement)
-        .backgroundColor('#222')
-        .width(600)
-        .height(600)
-        .nodeOpacity(1)
-        .nodeAutoColorBy('group')
-        .nodeLabel('id')
-        .nodeColor(d => (d as any).color)
-        .linkColor('#0f0f0f')
-        .onNodeClick(node => {
-          setSelectedNode(node as any);
-        })
-        console.log(graphElement.value)
-        await new Promise(r => setTimeout(r, 1000));
-          } catch(e) {
-             console.log(graphElement.value)
-            console.log(e)
-          }
-
-      
-    
-      if (route.params.rowid) {
-        await loadDataFromDB(route.params.rowid as string);
-      }
-
-
+ 
       await loadingController.dismiss();
 
     };
@@ -557,28 +497,31 @@ export default defineComponent({
 
     return {
       compId,
-      graphElement,
-      currentUser,
-      graphFetchCurrentUser,
-      userVotesLimit,
-      getVotesBypassCache,
-      getAnalyticsBypassCache,
-      userNoDeepLimit,
-      graphFetchUserDeepData,
-      toggleSwitch,
-      computedCollusionScore,
-      collusionScore,
-      loadingListMsgs,
+      userList,
       openLongLoading,
-      thermometer,
+      isPaused,
+      resumeProcess,
+      pauseProcess,
+      cancelProcess,
+      startProcess,
+      processStarted,
+      userColScores,
+      currentUser,
+      // graphFetchCurrentUser,
+      userVotesLimit,
+      // getAnalyticsBypassCache,
+      userNoDeepLimit,
+      // graphFetchUserDeepData,
+      // toggleSwitch,
+      // computedCollusionScore,
+      // collusionScore,
+      // loadingListMsgs,
+      // thermometer,
       addCircle,
       addToDB,
-      colScoreMin,
-      colScoreMax,
-      local,
-      selectedNode,
-      selectedNodeType,
-      loadedLinks
+      // colScoreMin,
+      // colScoreMax,
+      // loadedLinks
     };
   }
 

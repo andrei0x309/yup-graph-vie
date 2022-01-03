@@ -1,5 +1,7 @@
+import { SQLiteDBConnection } from '@capacitor-community/sqlite';
 
 const GRAPH_SNAPSHOTS_TABLE = 'graph_snapshots'
+const COL_SCORE_SNAPSHOTS_TABLE = 'col_scores'
 const DB_NAME = 'YUPGraph'
 
 const MAIN_TABLE_QUERY = `
@@ -16,7 +18,14 @@ const MAIN_TABLE_QUERY = `
     );
     `;
 
-import { SQLiteDBConnection } from '@capacitor-community/sqlite';
+const COL_SCORE_TABLE_QUERY = `
+    CREATE TABLE IF NOT EXISTS "${COL_SCORE_SNAPSHOTS_TABLE}" ( 
+        "rowid" INTEGER NOT NULL,
+        "users" TEXT NULL DEFAULT NULL,
+        "collusion_scores" TEXT NULL DEFAULT NULL,
+        "date_created" DATETIME NULL DEFAULT NULL,
+        PRIMARY KEY ("rowid")
+    );`
 
 async function deleteDatabase (db: SQLiteDBConnection): Promise<void> {
     try {
@@ -39,5 +48,7 @@ export {
     DB_NAME,
     GRAPH_SNAPSHOTS_TABLE,
     MAIN_TABLE_QUERY,
+    COL_SCORE_SNAPSHOTS_TABLE,
+    COL_SCORE_TABLE_QUERY,
     deleteDatabase
 }

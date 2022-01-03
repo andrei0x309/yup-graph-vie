@@ -59,17 +59,30 @@ export default defineComponent({
     const selectedIndex = ref(0);
     const appPages = [
       {
-        title: 'Graph Index',
+        title: 'User Graph Explorer',
         url: '/graph/index',
         iosIcon: settings,
         mdIcon: settings
       },
       {
-        title: 'DB Entries',
+        title: 'DB Entries For Graph',
         url: '/graph/db',
         iosIcon: cube,
         mdIcon: cube
-      }
+      },
+      {
+        title: 'CScore User List Compute',
+        url: '/graph/col-score-list',
+        iosIcon: settings,
+        mdIcon: settings
+      },
+      {
+        title: 'DB Entries For CScore',
+        url: '/graph/db-cscore',
+        iosIcon: settings,
+        mdIcon: settings
+      },
+
     ];
 
     const isModalOpen = app?.appContext.config.globalProperties.$isModalOpen;

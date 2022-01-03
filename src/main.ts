@@ -6,7 +6,7 @@ import App from './App.vue'
 import router from './router';
 import { useState } from '@/composables/state';
 import { IonicVue } from '@ionic/vue';
-import { MAIN_TABLE_QUERY, DB_NAME } from '@/utils/sqLite';
+import { GRAPH_SNAPSHOTS_TABLE, MAIN_TABLE_QUERY, COL_SCORE_SNAPSHOTS_TABLE, COL_SCORE_TABLE_QUERY, DB_NAME } from '@/utils/sqLite';
 // import { schemaToImport179 } from '@/utils/sqLite';
 
 
@@ -78,10 +78,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     console.log(db)
     await db.open();
 
-    const res = await db.execute(MAIN_TABLE_QUERY);
-    if (res.changes && res.changes.changes && res.changes.changes < 0) {
-      throw new Error(`Error: execute failed`);
+    const table_1 = await db.execute(MAIN_TABLE_QUERY);
+    if (table_1.changes && table_1.changes.changes && table_1.changes.changes < 0) {
+      throw new Error(`Error: execute createing table: ${GRAPH_SNAPSHOTS_TABLE}`);
     }
+    const table_2 = await db.execute(COL_SCORE_TABLE_QUERY);
+    if (table_2.changes && table_2.changes.changes && table_2.changes.changes < 0) {
+      throw new Error(`Error: execute createing table: ${COL_SCORE_SNAPSHOTS_TABLE}`);
+    }
+
     await sqlite.closeConnection(DB_NAME);
 
     router.isReady().then(() => {

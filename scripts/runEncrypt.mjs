@@ -4,8 +4,9 @@ import fs from 'fs'
  
 dotenv.config();
 
-const ENCRYPT_PASS = process.env['DISCORD_TOKEN']
+const ENCRYPT_PASS = process.env['ENCRYPT_PASS'] ?? '';
 
+if(!ENCRYPT_PASS) throw new Error('ENCRYPT_PASS is not set');
 
 console.log("Starting post build encryption of SPA");
 
