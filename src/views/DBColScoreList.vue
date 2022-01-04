@@ -1,6 +1,3 @@
-
-
- 
 <template>
   <ion-page :key="compId" style="margin-bottom: 2rem;">
     <ion-header :translucent="true">
@@ -19,13 +16,28 @@
         </ion-toolbar>
       </ion-header>
 
-      <template v-if="local.showComponent">
-        <div class="content-wrapper">
+      <ion-modal
+        :is-open="openViewModal"
+        :swipe-to-close="true"
+        :presenting-element="($parent as any).$refs.ionRouterOutlet"
+        @willDismiss="() => { openViewModal = false }"
+      >
+        <ion-content>
           <ion-list>
-            <ion-item>
-              <ion-button @click="delDB()" color="danger">Delete DB</ion-button>
+            <ion-item v-for="(value, key) of viewModalData" :key="key">
+              <ion-label>
+                <b>User:</b>
+                {{ value.user }} ;
+                <b>CScore:</b>
+                {{ value.cscore }}
+              </ion-label>
             </ion-item>
           </ion-list>
+        </ion-content>
+      </ion-modal>
+
+      <template v-if="local.showComponent">
+        <div class="content-wrapper">
           <ion-list v-if="lastEntries.values">
             <ion-list-header style="margin-bottom:2rem;">
               <ion-label>
@@ -34,59 +46,50 @@
               </ion-label>
             </ion-list-header>
             <ion-item style="margin-bottom:2rem;">
-              <SearchTable :entries="lastEntries" :loadGraph="loadGraph" :delRowId="delRowId"></SearchTable>
+              <SearchTableColScore
+                :entries="lastEntries"
+                :viewScores="viewScores"
+                :delRowId="delRowId"
+              ></SearchTableColScore>
             </ion-item>
             <ion-item>
               <ion-label style="text-align:center">- Search -</ion-label>
             </ion-item>
             <ion-item>
               <p>
-                User:
+                Has User:
                 <ion-input type="text" v-model="searchUser"></ion-input>
-              </p>
-            </ion-item>
-            <ion-item>
-              <p>
-                CollusionScore Greater than:
-                <ion-input type="text" v-model="searchCollScore"></ion-input>
               </p>
             </ion-item>
             <ion-item style="padding:1rem;">
               <div style="width:50%">
                 Date From:
-                <ion-item>
-                  <ion-input :value="dateFrom" />
-                  <ion-button fill="clear" id="open-date-input-2">
-                    <ion-icon :icon="calendar" />
-                  </ion-button>
-                  <ion-popover trigger="open-date-input-2" :show-backdrop="false">
-                    <ion-datetime
-                      presentation="date"
-                      @ionChange="(ev: any) => dateFrom = formatDate(ev.detail.value)"
-                    />
-                  </ion-popover>
-                </ion-item>
+                <ion-datetime
+                  :showDefaultButtons="true"
+                  v-model="dateFrom"
+                  presentation="date"
+                  @ionChange="(ev: any) => dateFrom = formatDate(ev.detail.value)"
+                ></ion-datetime>
               </div>
               <div style="width:50%">
                 Date To:
-                <ion-item>
-                  <ion-input :value="dateTo" />
-                  <ion-button fill="clear" id="open-date-input-2">
-                    <ion-icon :icon="calendar" />
-                  </ion-button>
-                  <ion-popover trigger="open-date-input-2" :show-backdrop="false">
-                    <ion-datetime
-                      presentation="date"
-                      @ionChange="(ev: any) => dateTo = formatDate(ev.detail.value)"
-                    />
-                  </ion-popover>
-                </ion-item>
+                <ion-datetime
+                  :showDefaultButtons="true"
+                  v-model="dateTo"
+                  presentation="date"
+                  @ionChange="(ev: any) => dateTo = formatDate(ev.detail.value)"
+                ></ion-datetime>
               </div>
             </ion-item>
             <ion-item>
               <ion-button @click="searchDB()" color="primary">
                 <ion-icon :icon="search"></ion-icon>Search
               </ion-button>
+            </ion-item>
+          </ion-list>
+          <ion-list v-else>
+            <ion-item>
+              <ion-label>No entires in DB</ion-label>
             </ion-item>
           </ion-list>
           <ion-item v-if="pressedSearch">
@@ -102,11 +105,11 @@
                 <ion-col>
                   <ion-list>
                     <ion-item v-if="searchResults.values">
-                      <SearchTable
+                      <SearchTableColScore
                         :entries="searchResults"
-                        :loadGraph="loadGraph"
+                        :viewScores="viewScores"
                         :delRowId="delRowId"
-                      ></SearchTable>
+                      ></SearchTableColScore>
                     </ion-item>
                     <ion-item v-else>
                       <ion-label>Sire your search was futile.</ion-label>
@@ -116,122 +119,7 @@
               </ion-row>
             </ion-grid>
           </ion-item>
-          <ion-list v-else>
-            <ion-item>
-              <ion-label>No entires in DB</ion-label>
-            </ion-item>
-          </ion-list>
         </div>
-
-        <!-- <div class="content-wrapper">
-    <ion-list>
-    
-      <ion-item>
-      <ion-list style="width:100%">
-      <ion-item>
-      <ion-label>Get Last Votes:</ion-label>
-      </ion-item>
-      <ion-item>
-            <ion-list>
-    <ion-radio-group  v-model="userVotesLimit">
-      <ion-list-header>
-        <ion-label>Number of Votes:</ion-label>
-      </ion-list-header>
-
-      <ion-item>
-        <ion-label>100</ion-label>
-        <ion-radio slot="start" value="100"></ion-radio>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>200</ion-label>
-        <ion-radio slot="start"  value="200"></ion-radio>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>300</ion-label>
-        <ion-radio slot="start"  value="300"></ion-radio>
-      </ion-item>
-    </ion-radio-group>
-  </ion-list>
-      </ion-item>
-      <ion-item>
-      User:&nbsp;&nbsp;
-      <ion-input v-model="currentUser" :value="currentUser" type="text" ></ion-input>
-      <ion-button @click="graphFetchCurrentUser()" color="warning">Get data</ion-button>
-      </ion-item>
-      </ion-list>
-      </ion-item>
-
-    <ion-item>
-      <ion-label>Bypass Cache </ion-label>
-      <ion-toggle
-        @IonChange="toggleSwitch('getVotesBypassCache')"
-        :checked="getVotesBypassCache" >
-      </ion-toggle>
-    </ion-item>
-  </ion-list>
-        </div>-->
-
-        <!-- <div class="content-wrapper">
-    <ion-list>
-    
-      <ion-item>
-      <ion-list style="width:100%">
-      <ion-item>
-      <ion-label>Analyze User: {{currentUser}}</ion-label>
-      </ion-item>
-      <ion-item>
-            <ion-list>
-    <ion-radio-group  v-model="userNoDeepLimit">
-      <ion-list-header>
-        <ion-label>Analyze level:</ion-label>
-      </ion-list-header>
-
-      <ion-item>
-        <ion-label>Low - 1000 Nodes / Links</ion-label>
-        <ion-radio slot="start" value="1000"></ion-radio>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>Medium - 2500 Nodes / Links</ion-label>
-        <ion-radio slot="start"  value="2500"></ion-radio>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>High - 5000 Nodes / Links</ion-label>
-        <ion-radio slot="start"  value="5000"></ion-radio>
-      </ion-item>
-    </ion-radio-group>
-  </ion-list>
-      </ion-item>
-      <ion-item>
-      User:&nbsp;&nbsp;{{currentUser}}&nbsp;&nbsp;
-      <ion-button @click="graphFetchUserDeepData()" color="warning">Get Data</ion-button>
-      </ion-item>
-      </ion-list>
-      </ion-item>
-
-    <ion-item>
-      <ion-label>Bypass Cache </ion-label>
-      <ion-toggle
-        @IonChange="toggleSwitch('getAnalyticsBypassCache')"
-        :checked="getAnalyticsBypassCache" >
-      </ion-toggle>
-    </ion-item>
-      <ion-item>
-         <ion-label>Collusion Score:&nbsp;&nbsp; {{ computedCollusionScore }} </ion-label>
-          </ion-item>
-        <ion-item>Collusion Scale:
-        &nbsp;{{colScoreMin}}<ion-range :min="colScoreMin" :max="colScoreMax" step="10" :value="collusionScore" disabled :color=" collusionScore < colScoreMax/2 ? 'success' : collusionScore < colScoreMax/3 ? 'warning': 'danger'">
-        </ion-range>{{colScoreMax}}&nbsp;<ion-icon slot="end" color="success" :icon="thermometer" ></ion-icon>
-      </ion-item>
-     <ion-item>
-       <ion-button @click="addToDB()"><ion-icon :icon="addCircle"></ion-icon> ADD this Snappost to database</ion-button>
-       </ion-item>
-  </ion-list>
- 
-        </div>-->
       </template>
     </ion-content>
   </ion-page>
@@ -245,7 +133,6 @@
 
 import {
   loadingController,
-  //   alertController,
   IonPage,
   IonTitle,
   IonToolbar,
@@ -253,26 +140,18 @@ import {
   IonHeader,
   IonMenuButton,
   IonButtons,
-  IonPopover,
   IonDatetime,
   IonButton,
   IonInput,
   IonLabel,
   IonList,
   IonItem,
-  // IonToggle,
-  // IonRadioGroup,
-  // IonRadio,
+  IonCol,
+  IonRow,
+  IonGrid,
   IonListHeader,
-  // IonModal,
-  // IonRange,
+  IonModal,
   IonIcon,
-  // IonSpinner,
-  // IonCard, 
-  // IonCardContent,
-  //  IonCardHeader,
-  //   IonCardSubtitle,
-  //    IonCardTitle,
 
 
 } from '@ionic/vue';
@@ -282,15 +161,14 @@ import {
   getCurrentInstance, onBeforeMount
 } from 'vue';
 import { useRoute } from 'vue-router';
-import { GRAPH_SNAPSHOTS_TABLE, DB_NAME, deleteDatabase } from '@/utils/sqLite'
-import { calendar, search } from "ionicons/icons";
+import { COL_SCORE_SNAPSHOTS_TABLE, DB_NAME, deleteDatabase } from '@/utils/sqLite'
+import { search } from "ionicons/icons";
 import { SQLiteDBConnection, SQLiteHook } from 'vue-sqlite-hook/dist';
 import { capSQLiteValues } from '@capacitor-community/sqlite';
 import { showAllert } from '@/utils/ionic'
 import { format, parseISO } from 'date-fns';
-import router from '@/router';
 import { Capacitor } from '@capacitor/core';
-import SearchTable from '@/components/SearchTable.vue';
+import SearchTableColScore from '@/components/SearchTableColScore.vue';
 
 const local = {
   showComponent: false,
@@ -300,7 +178,7 @@ const local = {
 export default defineComponent({
   name: 'DB-index',
   components: {
-    SearchTable,
+    SearchTableColScore,
     IonPage,
     IonTitle,
     IonToolbar,
@@ -308,26 +186,18 @@ export default defineComponent({
     IonHeader,
     IonMenuButton,
     IonButtons,
-    IonPopover,
     IonDatetime,
     IonButton,
     IonInput,
     IonLabel,
     IonList,
     IonItem,
-    // IonToggle,
-    // IonRadioGroup,
-    // IonRadio,
+    IonCol,
+    IonRow,
+    IonGrid,
     IonListHeader,
-    // IonModal,
-    // IonRange,
+    IonModal,
     IonIcon,
-    // IonSpinner,
-    //     IonCard, 
-    // IonCardContent,
-    //  IonCardHeader,
-    //   IonCardSubtitle,
-    //    IonCardTitle
   },
   ionViewWillEnter () {
     local.showComponent = true;
@@ -347,25 +217,11 @@ export default defineComponent({
     const dateFrom = ref(new Date(Date.now() - (1000 * 60 * 60 * 24 * 30)).toISOString());
     const dateTo = ref(new Date().toISOString());
     const searchUser = ref('');
-    const searchCollScore = ref('');
     const searchResults: Ref<capSQLiteValues> = ref({});
     const lastNoEntries = ref(0);
     const pressedSearch = ref(false);
-
-    // const myForceGraph = ForceGraph3D()(document.getElementById('3d-graph'))
-    //   .backgroundColor('white')
-    //   .linkColor(() => '#0f0f0f') //Not working?
-    //   .nodeOpacity(1)
-    //   .height(document.getElementsByClassName('right')[0].offsetHeight)
-    //   .width(document.getElementsByClassName('right')[0].offsetWidth)
-    //   .nodeLabel('id')
-    //   .nodeColor(d => d.color)
-    //   .onNodeClick(node => {
-    //     getCorrespondingNodes(node);
-    //   })
-    //   .onNodeRightClick(node => {
-    //     addSelectNode(node);
-    //   });
+    const openViewModal = ref(false);
+    const viewModalData: Ref<Record<string, string>[]> = ref([]);
 
 
     watch(
@@ -399,26 +255,26 @@ export default defineComponent({
       }
     }
 
-    const loadGraph = async (id: string) => {
-      router.push(`/graph/index/${id}`)
+    const viewScores = (usersScores: any) => {
+      console.log(usersScores)
+      viewModalData.value = JSON.parse(usersScores);
+      openViewModal.value = true;
     }
 
     const searchDB = async () => {
-      const userQuery = searchUser.value ? ` user LIKE '%${searchUser.value}%'` : '';
-      const collScoreQuery = searchCollScore.value ? userQuery ? ` AND collusion_score >= '${searchCollScore.value}'` : ` collusion_score >= '${searchCollScore.value}'` : '';
-      const dateFromQuery = dateFrom.value && dateTo.value ? userQuery || collScoreQuery ? ` AND date_created BETWEEN '${dateFrom.value}' AND '${dateTo.value}' ` : ` date_created BETWEEN '${dateFrom.value}' AND '${dateTo.value}' ` : '';
+      const userQuery = searchUser.value ? ` users LIKE '%${searchUser.value}%'` : '';
+      const dateFromQuery = dateFrom.value && dateTo.value ? userQuery ? ` AND date_created BETWEEN '${dateFrom.value}' AND '${dateTo.value}' ` : ` date_created BETWEEN '${dateFrom.value}' AND '${dateTo.value}' ` : '';
 
-      const query = `SELECT * FROM ${GRAPH_SNAPSHOTS_TABLE} WHERE  ${userQuery}${collScoreQuery}${dateFromQuery}  Order By date_created DESC LIMIT 100 `;
+      const query = `SELECT * FROM ${COL_SCORE_SNAPSHOTS_TABLE} WHERE  ${userQuery}${dateFromQuery} Order By date_created DESC LIMIT 100 `;
       searchResults.value = await db.query(query);
       pressedSearch.value = true;
 
-      console.log('search', searchResults.value);
     }
 
     const delRowId = async (id: string) => {
       if (db) {
         try {
-          await db.run(`DELETE FROM ${GRAPH_SNAPSHOTS_TABLE} WHERE rowid = ?`, [id]);
+          await db.run(`DELETE FROM ${COL_SCORE_SNAPSHOTS_TABLE} WHERE rowid = ?`, [id]);
           lastEntries.value.values = lastEntries.value.values?.filter(e => e.rowid !== id);
           lastNoEntries.value = lastEntries.value.values?.length || 0;
           showAllert('success', 'Row deleted');
@@ -427,7 +283,6 @@ export default defineComponent({
           }
         } catch (e) {
           showAllert('error', `Row delete error: ${e}`);
-          console.log('error deleting row', e);
         }
       }
     }
@@ -442,7 +297,7 @@ export default defineComponent({
         message: 'Loading...',
       })).present();
 
-      lastEntries.value = await db.query(`SELECT rowid, user,collusion_score,no_user_posts,no_user_analytics_links,date_created  FROM ${GRAPH_SNAPSHOTS_TABLE} LIMIT 15`)
+      lastEntries.value = await db.query(`SELECT rowid, users,collusion_scores,date_created  FROM ${COL_SCORE_SNAPSHOTS_TABLE} LIMIT 15`)
       lastNoEntries.value = (lastEntries.value.values as []).length;
       console.log(lastEntries.value, lastNoEntries.value)
       await loadingController.dismiss();
@@ -458,20 +313,21 @@ export default defineComponent({
       local,
       lastEntries,
       dateFrom,
-      loadGraph,
       delRowId,
       dateTo,
       formatDate,
       searchUser,
-      searchCollScore,
-      calendar,
       search,
       searchDB,
       lastNoEntries,
       pressedSearch,
-      searchResults
+      searchResults,
+      openViewModal,
+      viewModalData,
+      viewScores,
     };
   }
+
 
 });
 </script>

@@ -159,7 +159,7 @@
               {{ colScoreMax }}&nbsp;
               <ion-icon slot="end" color="success" :icon="thermometer"></ion-icon>
             </ion-item>
-            <ion-item>
+            <ion-item v-if="!loadedFromDB || !currentUserDeepData">
               <ion-button @click="addToDB()">
                 <ion-icon :icon="addCircle"></ion-icon>ADD this SnapShot to database
               </ion-button>
@@ -195,12 +195,6 @@ import {
   IonRange,
   IonIcon,
   IonSpinner,
-  // IonCard, 
-  // IonCardContent,
-  //  IonCardHeader,
-  //   IonCardSubtitle,
-  //    IonCardTitle,
-
 
 } from '@ionic/vue';
 import { defineComponent, onMounted, Ref, ref, watch, computed, getCurrentInstance, onBeforeMount } from 'vue';
@@ -247,11 +241,6 @@ export default defineComponent({
     IonRange,
     IonIcon,
     IonSpinner,
-    //     IonCard, 
-    // IonCardContent,
-    //  IonCardHeader,
-    //   IonCardSubtitle,
-    //    IonCardTitle
   },
   ionViewWillEnter () {
     local.showComponent = true;
@@ -265,21 +254,6 @@ export default defineComponent({
     const route = useRoute();
     const sqlite: SQLiteHook = app?.appContext.config.globalProperties.$sqlite;
     let db: SQLiteDBConnection;
-
-    // const myForceGraph = ForceGraph3D()(document.getElementById('3d-graph'))
-    //   .backgroundColor('white')
-    //   .linkColor(() => '#0f0f0f') //Not working?
-    //   .nodeOpacity(1)
-    //   .height(document.getElementsByClassName('right')[0].offsetHeight)
-    //   .width(document.getElementsByClassName('right')[0].offsetWidth)
-    //   .nodeLabel('id')
-    //   .nodeColor(d => d.color)
-    //   .onNodeClick(node => {
-    //     getCorrespondingNodes(node);
-    //   })
-    //   .onNodeRightClick(node => {
-    //     addSelectNode(node);
-    //   });
 
     const graphElement = ref<HTMLDivElement>();
     const graph: Ref = ref(null);
@@ -302,6 +276,7 @@ export default defineComponent({
     const selectedNodeType = ref('')
     const selectedPrevNode = ref()
     const selectedNodeLastColor = ref('')
+    const loadedFromDB = ref(false)
 
 
 
@@ -382,7 +357,7 @@ export default defineComponent({
     const graphFetchUserDeepData = async () => {
 
       if (currentUser.value === '' || currentUserData === null) {
-        await showAllert('Error', 'You first need to get some links for a user');
+        await showAllert('Error', 'You first need to get some links for a user.');
         return;
       }
 
@@ -435,7 +410,7 @@ export default defineComponent({
  
       if( !currentUserData || !currentUserDeepData || !currentUser.value  ){
         await loadingController.dismiss();
-        await showAllert('Error', 'You first need to generate the date in order to load it!');
+        await showAllert('Error', 'You first need to generate the analytics data in order to load it in DB!');
         return;
       }
 
@@ -489,8 +464,8 @@ export default defineComponent({
     const loadDataFromDB = async (rowid: string) => {
  
       const sqlcmd = `SELECT * FROM ${GRAPH_SNAPSHOTS_TABLE} WHERE rowid = ? ORDER BY date_created DESC LIMIT 1`;
- 
       try {
+        loadedFromDB.value = true;
         const data = await db.query(sqlcmd, [rowid]);
         console.log(data);
         
@@ -575,10 +550,11 @@ export default defineComponent({
       addToDB,
       colScoreMin,
       colScoreMax,
-      local,
+      currentUserDeepData,
       selectedNode,
       selectedNodeType,
-      loadedLinks
+      loadedLinks,
+      loadedFromDB
     };
   }
 

@@ -21,11 +21,6 @@
 
       <template v-if="local.showComponent">
         <div class="content-wrapper">
-          <ion-list>
-            <ion-item>
-              <ion-button @click="delDB()" color="danger">Delete DB</ion-button>
-            </ion-item>
-          </ion-list>
           <ion-list v-if="lastEntries.values">
             <ion-list-header style="margin-bottom:2rem;">
               <ion-label>
@@ -47,46 +42,30 @@
             </ion-item>
             <ion-item>
               <p>
-                CollusionScore Greater than:
+                Collusion Score Greater than:
                 <ion-input type="text" v-model="searchCollScore"></ion-input>
               </p>
             </ion-item>
             <ion-item style="padding:1rem;">
               <div style="width:50%">
                 Date From:
-                <ion-item>
-                  <ion-input :value="dateFrom" />
-                  <ion-button fill="clear" id="open-date-input-2">
-                    <ion-icon :icon="calendar" />
-                  </ion-button>
-                  <ion-popover trigger="open-date-input-2" :show-backdrop="false">
-                    <ion-datetime
-                      presentation="date"
-                      @ionChange="(ev: any) => dateFrom = formatDate(ev.detail.value)"
-                    />
-                  </ion-popover>
-                </ion-item>
+         <ion-datetime :showDefaultButtons="true" v-model="dateFrom"  presentation="date" @ionChange="(ev: any) => dateFrom = formatDate(ev.detail.value)"></ion-datetime>
               </div>
               <div style="width:50%">
                 Date To:
-                <ion-item>
-                  <ion-input :value="dateTo" />
-                  <ion-button fill="clear" id="open-date-input-2">
-                    <ion-icon :icon="calendar" />
-                  </ion-button>
-                  <ion-popover trigger="open-date-input-2" :show-backdrop="false">
-                    <ion-datetime
-                      presentation="date"
-                      @ionChange="(ev: any) => dateTo = formatDate(ev.detail.value)"
-                    />
-                  </ion-popover>
-                </ion-item>
+            <ion-datetime :showDefaultButtons="true" v-model="dateTo"  presentation="date" @ionChange="(ev: any) => dateTo = formatDate(ev.detail.value)"></ion-datetime>
+
               </div>
             </ion-item>
             <ion-item>
               <ion-button @click="searchDB()" color="primary">
                 <ion-icon :icon="search"></ion-icon>Search
               </ion-button>
+            </ion-item>
+          </ion-list>
+          <ion-list v-else>
+            <ion-item>
+              <ion-label>No entires in DB</ion-label>
             </ion-item>
           </ion-list>
           <ion-item v-if="pressedSearch">
@@ -116,122 +95,8 @@
               </ion-row>
             </ion-grid>
           </ion-item>
-          <ion-list v-else>
-            <ion-item>
-              <ion-label>No entires in DB</ion-label>
-            </ion-item>
-          </ion-list>
         </div>
 
-        <!-- <div class="content-wrapper">
-    <ion-list>
-    
-      <ion-item>
-      <ion-list style="width:100%">
-      <ion-item>
-      <ion-label>Get Last Votes:</ion-label>
-      </ion-item>
-      <ion-item>
-            <ion-list>
-    <ion-radio-group  v-model="userVotesLimit">
-      <ion-list-header>
-        <ion-label>Number of Votes:</ion-label>
-      </ion-list-header>
-
-      <ion-item>
-        <ion-label>100</ion-label>
-        <ion-radio slot="start" value="100"></ion-radio>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>200</ion-label>
-        <ion-radio slot="start"  value="200"></ion-radio>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>300</ion-label>
-        <ion-radio slot="start"  value="300"></ion-radio>
-      </ion-item>
-    </ion-radio-group>
-  </ion-list>
-      </ion-item>
-      <ion-item>
-      User:&nbsp;&nbsp;
-      <ion-input v-model="currentUser" :value="currentUser" type="text" ></ion-input>
-      <ion-button @click="graphFetchCurrentUser()" color="warning">Get data</ion-button>
-      </ion-item>
-      </ion-list>
-      </ion-item>
-
-    <ion-item>
-      <ion-label>Bypass Cache </ion-label>
-      <ion-toggle
-        @IonChange="toggleSwitch('getVotesBypassCache')"
-        :checked="getVotesBypassCache" >
-      </ion-toggle>
-    </ion-item>
-  </ion-list>
-        </div>-->
-
-        <!-- <div class="content-wrapper">
-    <ion-list>
-    
-      <ion-item>
-      <ion-list style="width:100%">
-      <ion-item>
-      <ion-label>Analyze User: {{currentUser}}</ion-label>
-      </ion-item>
-      <ion-item>
-            <ion-list>
-    <ion-radio-group  v-model="userNoDeepLimit">
-      <ion-list-header>
-        <ion-label>Analyze level:</ion-label>
-      </ion-list-header>
-
-      <ion-item>
-        <ion-label>Low - 1000 Nodes / Links</ion-label>
-        <ion-radio slot="start" value="1000"></ion-radio>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>Medium - 2500 Nodes / Links</ion-label>
-        <ion-radio slot="start"  value="2500"></ion-radio>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>High - 5000 Nodes / Links</ion-label>
-        <ion-radio slot="start"  value="5000"></ion-radio>
-      </ion-item>
-    </ion-radio-group>
-  </ion-list>
-      </ion-item>
-      <ion-item>
-      User:&nbsp;&nbsp;{{currentUser}}&nbsp;&nbsp;
-      <ion-button @click="graphFetchUserDeepData()" color="warning">Get Data</ion-button>
-      </ion-item>
-      </ion-list>
-      </ion-item>
-
-    <ion-item>
-      <ion-label>Bypass Cache </ion-label>
-      <ion-toggle
-        @IonChange="toggleSwitch('getAnalyticsBypassCache')"
-        :checked="getAnalyticsBypassCache" >
-      </ion-toggle>
-    </ion-item>
-      <ion-item>
-         <ion-label>Collusion Score:&nbsp;&nbsp; {{ computedCollusionScore }} </ion-label>
-          </ion-item>
-        <ion-item>Collusion Scale:
-        &nbsp;{{colScoreMin}}<ion-range :min="colScoreMin" :max="colScoreMax" step="10" :value="collusionScore" disabled :color=" collusionScore < colScoreMax/2 ? 'success' : collusionScore < colScoreMax/3 ? 'warning': 'danger'">
-        </ion-range>{{colScoreMax}}&nbsp;<ion-icon slot="end" color="success" :icon="thermometer" ></ion-icon>
-      </ion-item>
-     <ion-item>
-       <ion-button @click="addToDB()"><ion-icon :icon="addCircle"></ion-icon> ADD this Snappost to database</ion-button>
-       </ion-item>
-  </ion-list>
- 
-        </div>-->
       </template>
     </ion-content>
   </ion-page>
@@ -245,7 +110,6 @@
 
 import {
   loadingController,
-  //   alertController,
   IonPage,
   IonTitle,
   IonToolbar,
@@ -253,27 +117,17 @@ import {
   IonHeader,
   IonMenuButton,
   IonButtons,
-  IonPopover,
   IonDatetime,
   IonButton,
   IonInput,
   IonLabel,
   IonList,
   IonItem,
-  // IonToggle,
-  // IonRadioGroup,
-  // IonRadio,
+  IonCol,
+  IonRow,
+  IonGrid,
   IonListHeader,
-  // IonModal,
-  // IonRange,
   IonIcon,
-  // IonSpinner,
-  // IonCard, 
-  // IonCardContent,
-  //  IonCardHeader,
-  //   IonCardSubtitle,
-  //    IonCardTitle,
-
 
 } from '@ionic/vue';
 import {
@@ -308,26 +162,17 @@ export default defineComponent({
     IonHeader,
     IonMenuButton,
     IonButtons,
-    IonPopover,
     IonDatetime,
     IonButton,
     IonInput,
     IonLabel,
     IonList,
     IonItem,
-    // IonToggle,
-    // IonRadioGroup,
-    // IonRadio,
+    IonCol,
+      IonRow,
+  IonGrid,
     IonListHeader,
-    // IonModal,
-    // IonRange,
     IonIcon,
-    // IonSpinner,
-    //     IonCard, 
-    // IonCardContent,
-    //  IonCardHeader,
-    //   IonCardSubtitle,
-    //    IonCardTitle
   },
   ionViewWillEnter () {
     local.showComponent = true;
@@ -351,22 +196,8 @@ export default defineComponent({
     const searchResults: Ref<capSQLiteValues> = ref({});
     const lastNoEntries = ref(0);
     const pressedSearch = ref(false);
-
-    // const myForceGraph = ForceGraph3D()(document.getElementById('3d-graph'))
-    //   .backgroundColor('white')
-    //   .linkColor(() => '#0f0f0f') //Not working?
-    //   .nodeOpacity(1)
-    //   .height(document.getElementsByClassName('right')[0].offsetHeight)
-    //   .width(document.getElementsByClassName('right')[0].offsetWidth)
-    //   .nodeLabel('id')
-    //   .nodeColor(d => d.color)
-    //   .onNodeClick(node => {
-    //     getCorrespondingNodes(node);
-    //   })
-    //   .onNodeRightClick(node => {
-    //     addSelectNode(node);
-    //   });
-
+    const dateToExpand = ref(false);
+    const datePopoverFrom = ref(false);
 
     watch(
       () => route.params.id,
@@ -469,7 +300,9 @@ export default defineComponent({
       searchDB,
       lastNoEntries,
       pressedSearch,
-      searchResults
+      searchResults,
+      dateToExpand,
+      datePopoverFrom,
     };
   }
 

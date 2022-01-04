@@ -17,26 +17,23 @@
       </ion-header>
  
         <div v-if="openLongLoading" class="content-wrapper">
-             <ion-content>
             <ion-list>
               <ion-item>
-                <ion-label>Loading</ion-label>
+                <ion-label class="ion-text-center">{{ isPaused ? 'Paused': 'Loading...' }}</ion-label>
               </ion-item>
               <ion-item>
-                <ion-spinner name="crescent"></ion-spinner>
+                <ion-spinner style="margin:auto" :paused="isPaused" name="crescent"></ion-spinner>
               </ion-item>
               <ion-item>
-               <ion-label> User {{ }} out of {{ }} </ion-label>
+               <ion-label class="ion-text-center"> User <b>{{ usersProcessed }}</b> out of <b>{{ usersNo }}</b> </ion-label>
               </ion-item>
                <ion-item>
-               <ion-label> Current User: {{ currentUser  }} </ion-label>
+               <ion-label class="ion-text-center"> Current User: {{ currentUser  }} </ion-label>
               </ion-item>
             </ion-list>
-          </ion-content>
         </div>
 
         <div v-if="userColScores.length" class="content-wrapper">
-             <ion-content>
             <ion-list>
               <ion-item>
                 <ion-label>Results</ion-label>
@@ -50,22 +47,21 @@
               </ion-button>
               </ion-item>
             </ion-list>
-          </ion-content>
         </div>
  
         <div class="content-wrapper">
           <ion-list>
             <ion-item>
               <ion-list style="width:100%">
-                <ion-item>
-                  <ion-label style="text-align:center">Calculate collusion score for userlist:</ion-label>
+                <ion-item  style="text-align:center">
+                  Calculate collusion score for userlist:
                 </ion-item>
                       <ion-item>
                          <ion-grid>
               <ion-row>
                 <ion-col>
-                  <ion-item>
-                    <ion-label style="text-align:center">Input users separated by comma</ion-label>
+                  <ion-item style="text-align:center">
+                    Input users separated by comma
                   </ion-item>
                 </ion-col>
               </ion-row>
@@ -75,11 +71,13 @@
                       <ion-input v-model="userList" type="text"></ion-input>
                     </ion-item>
                 </ion-col>
+                 </ion-row>
+                  <ion-row>
                  <ion-col>
 <ion-button @click="startProcess()" :disabled="processStarted" color="success">Start</ion-button>
                 </ion-col>
                                  <ion-col>
-<ion-button @click="isPaused ? resumeProcess() : pauseProcess()" :color=" isPaused ? 'warning' : 'primary'">Pause</ion-button>
+<ion-button @click="isPaused ? resumeProcess() : pauseProcess()" :disabled="!processStarted" :color=" isPaused ? 'warning' : 'primary'">Pause</ion-button>
                 </ion-col>
                                  <ion-col>
 <ion-button @click="cancelProcess()" :disabled="!processStarted" color="danger">Cancel</ion-button>
@@ -145,52 +143,6 @@
           </ion-list>
         </div>
 
-        <!-- <div v-if="loadedLinks" class="content-wrapper">
-          <ion-list>
-            <ion-item>
-              <ion-list style="width:100%">
-                <ion-item>
-                  <ion-label>Analyze User: {{ currentUser }}</ion-label>
-                </ion-item>
-                
-                <ion-item>
-                  User:&nbsp;&nbsp;{{ currentUser }}&nbsp;&nbsp;
-                  <ion-button @click="graphFetchUserDeepData()" color="warning">Get Data</ion-button>
-                </ion-item>
-              </ion-list>
-            </ion-item>
-
-            <ion-item>
-              <ion-label>Bypass Cache</ion-label>
-              <ion-toggle
-                @IonChange="toggleSwitch('getAnalyticsBypassCache')"
-                :checked="getAnalyticsBypassCache"
-              ></ion-toggle>
-            </ion-item>
-            <ion-item>
-              <ion-label>Collusion Score:&nbsp;&nbsp; {{ computedCollusionScore }}</ion-label>
-            </ion-item>
-            <ion-item>
-              Collusion Scale:
-              &nbsp;{{ colScoreMin }}
-              <ion-range
-                :min="colScoreMin"
-                :max="colScoreMax"
-                step="10"
-                :value="collusionScore"
-                disabled
-                :color="collusionScore < colScoreMax / 2 ? 'success' : collusionScore < colScoreMax / 3 ? 'warning' : 'danger'"
-              ></ion-range>
-              {{ colScoreMax }}&nbsp;
-              <ion-icon slot="end" color="success" :icon="thermometer"></ion-icon>
-            </ion-item>
-            <ion-item>
-              <ion-button @click="addToDB()">
-                <ion-icon :icon="addCircle"></ion-icon>ADD this Snappost to database
-              </ion-button>
-            </ion-item>
-          </ion-list>
-        </div> -->
     </ion-content>
   </ion-page>
 </template>
@@ -200,6 +152,7 @@
 <script lang="ts">
 import {
   loadingController,
+  toastController,
   IonPage,
   IonTitle,
   IonToolbar,
@@ -212,13 +165,16 @@ import {
   IonLabel,
   IonList,
   IonItem,
+  IonRow,
+  IonCol,
+  IonGrid,
   // IonToggle,
   IonRadioGroup,
   IonRadio,
   IonListHeader,
   // IonModal,
   // IonRange,
-  // IonIcon,
+  IonIcon,
   IonSpinner,
   // IonCard, 
   // IonCardContent,
@@ -228,7 +184,7 @@ import {
 
 
 } from '@ionic/vue';
-import { defineComponent, onMounted, Ref, ref, watch, computed, getCurrentInstance, onBeforeMount } from 'vue';
+import { defineComponent, onMounted, Ref, ref, watch, getCurrentInstance, onBeforeMount } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   getSingleUserData,
@@ -237,9 +193,9 @@ import {
   calcuateCollusionScore
 }
   from '@/utils/graphV2'
-import { GRAPH_SNAPSHOTS_TABLE, DB_NAME } from '@/utils/sqLite'
+import { COL_SCORE_SNAPSHOTS_TABLE, DB_NAME } from '@/utils/sqLite'
 import { showAllert } from '@/utils/ionic'
-import { thermometer, addCircle } from "ionicons/icons";
+import { addCircle } from "ionicons/icons";
 import { SQLiteDBConnection, SQLiteHook } from 'vue-sqlite-hook/dist';
 import { Capacitor } from '@capacitor/core';
 
@@ -263,13 +219,17 @@ export default defineComponent({
     IonLabel,
     IonList,
     IonItem,
+      IonRow,
+  IonCol,
+  IonGrid,
+
     // IonToggle,
     IonRadioGroup,
     IonRadio,
     IonListHeader,
     // IonModal,
     // IonRange,
-    // IonIcon,
+    IonIcon,
     IonSpinner,
     //     IonCard, 
     // IonCardContent,
@@ -295,11 +255,8 @@ export default defineComponent({
     const userNoDeepLimit = ref('1000');
     const getVotesBypassCache = ref(false);
     const getAnalyticsBypassCache = ref(false);
-    let currentUserData: any = null;
-    let currentUserDeepData: any = null;
     const openLongLoading = ref(false);
     const isPaused = ref(false);
-    const collusionScore = ref(0);
     const userColScores: Ref<Record<string, number | string>[]> = ref([]);
     const compId: Ref = ref(route.params.id);
     const usersNo = ref(0);
@@ -318,10 +275,7 @@ export default defineComponent({
 
 
 
-    const computedCollusionScore = computed(() => {
-      return collusionScore.value > 0 ? collusionScore.value : '';
-    });
-
+ 
     watch(
       () => route.params.id,
       async () => {
@@ -356,18 +310,45 @@ export default defineComponent({
       openLongLoading.value = true;
       processStarted.value = true;
 
-      const users = userList.value.split(',').map(el => el.trim());
+      let users = userList.value.split(',').map(el => el.trim());
+      if(userColScores.value.length > 0) {
+        const alreadyProcessed = userColScores.value.map(el => el.user);
+        const alreadyProcessedList: string[] = []
+        users = users.filter(el => {
+          if(alreadyProcessed.includes(el)) {
+            alreadyProcessedList.push(el)
+            return false
+          }
+          return true
+        })
+        
+        if(alreadyProcessedList.length > 0) {
+                 const toast = await toastController
+        .create({
+          message:  `Users ${alreadyProcessedList.join(', ')} were excluded from the process because they were already processed`,
+          duration: 2500
+        })
+      return toast.present()
+        }
+
+        toastController
+      }
       usersNo.value = users.length;
       for ( const user of users ) {
       try {
         currentUser.value = user;
         const userData = await getSingleUserData(user, Number(userVotesLimit.value), getVotesBypassCache.value);
         const linksData = await getUserDeepData(await generateData(userData), Number(userNoDeepLimit.value), getAnalyticsBypassCache.value)
-         calcuateCollusionScore(linksData);
-
+        const cscore = calcuateCollusionScore(linksData);
+         if( !processStarted.value ) return
+         if (isPaused.value) {
+           while (isPaused.value) {
+             await new Promise(resolve => setTimeout(resolve, 500));
+           }
+         }
          userColScores.value.push({
           user,
-          cscore: collusionScore.value
+          cscore
          })
          userList.value = userList.value.split(',').filter(el => el !== user).join(',');
          usersProcessed.value++;
@@ -378,96 +359,43 @@ export default defineComponent({
          })
       }
       }
+      console.log('userColScores', userColScores.value);
+      console.log('openLongLoading', openLongLoading.value);
+      processStarted.value = false;
       openLongLoading.value = false;
     };
 
 
     const pauseProcess = async () => {
-      await (await loadingController.create({
-        message: 'Pausing...',
-      })).present();
-      await loadingController.dismiss();
+      isPaused.value = true;
     };
 
     const resumeProcess = async () => {
-      await (await loadingController.create({
-        message: 'Resuming...',
-      })).present();
-      await loadingController.dismiss();
+      isPaused.value = false;
     };
 
     const cancelProcess = async () => {
-      await (await loadingController.create({
-        message: 'Cancelling...',
-      })).present();
-      await loadingController.dismiss();
+      processStarted.value = false;
+      openLongLoading.value = false;
     };
-
-    // const graphFetchUserDeepData = async () => {
-
-    //   if (currentUser.value === '' || currentUserData === null) {
-    //     await showAllert('Error', 'You first need to get some links for a user');
-    //     return;
-    //   }
-
-    //   await (await loadingController.create({
-    //     message: 'Loading...',
-    //   })).present();
-
-    //   const isTakeingLong = setTimeout(async () => {
-    //     openLongLoading.value = true;
-    //     try {
-    //       await loadingController.dismiss();
-    //     } catch (e) {
-    //       e
-    //     }
-    //   }, 150);
-
-    //   try {
-    //     currentUserDeepData = 
-    //     graph.value.graphData(currentUserDeepData);
-    //     collusionScore.value =
-    //     graph.value.cameraPosition(
-    //       { x: 0, y: 0, z: currentUserDeepData.nodes.length * 1.5 },
-    //       0, 2000)
-    //   } catch (e) {
-    //     console.log(e);
-    //     await showAllert('Error', 'Error fetching deep data');
-    //   } finally {
-    //     openLongLoading.value = false;
-    //     try {
-    //       loadingController.dismiss().then().catch(e => e);
-    //       clearTimeout(isTakeingLong);
-    //     } catch (e) { e }
-    //   }
-    // }
-
-    const deGraph = (data: any) =>{
-          const degraphLinks = (e: any) => {
-            if(typeof e.source === 'string'){
-              return { source: e.source, target: e.target}
-            }
-            return { source: e.source.id, target: e.target.id}
-          }
-          return { nodes:data.nodes.map( (e:any) => ({ id:e.id, group:e.group, color:e.color, ...(e.postId && {postId: e.postId }) })), links: data.links.map( degraphLinks ) }
-    }
 
     const addToDB = async () => {
       await (await loadingController.create({
         message: 'Loading...',
       })).present();
  
-      if( !currentUserData || !currentUserDeepData || !currentUser.value  ){
+      if( userColScores.value.length < 1 ){
         await loadingController.dismiss();
-        await showAllert('Error', 'You first need to generate the date in order to load it!');
+        await showAllert('Error', 'You first need to get some data first!');
         return;
       }
+      
+      const users = (userColScores.value.map(el => el.user).reduce((acc, cur) =>  acc += `${cur} ,`, '') as string).slice(0, -1);
+      const cscores =  JSON.stringify(userColScores.value)
 
+      const sqlcmd = `INSERT INTO ${COL_SCORE_SNAPSHOTS_TABLE} ( users, collusion_scores, date_created  ) VALUES ( ?, ?, ? )`;
       
-      const sqlcmd = `INSERT INTO ${GRAPH_SNAPSHOTS_TABLE} (user, graph_user_links, graph_user_analytics, collusion_score, no_user_posts, no_user_analytics_links, date_created ) VALUES (?,?,?,?,?,?,?)`;
-      
-      
-      const values: Array<any> = [currentUser.value, JSON.stringify(deGraph(currentUserData)), JSON.stringify(deGraph(currentUserDeepData)), collusionScore.value, currentUserData.nodes.length - 1, currentUserDeepData.links.length, new Date().toISOString()];
+      const values: Array<any> = [users, cscores, new Date().toISOString()];
       try {
         await db.run(sqlcmd, values);
         if (platform === 'web') {
@@ -519,6 +447,8 @@ export default defineComponent({
       // thermometer,
       addCircle,
       addToDB,
+      usersNo,
+      usersProcessed
       // colScoreMin,
       // colScoreMax,
       // loadedLinks

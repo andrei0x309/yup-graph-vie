@@ -19,13 +19,16 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/ColScoreList.vue')
   },
   {
-    path: '/graph/col-score-list',
-    component: () => import('@/views/ColScoreList.vue')
+    path: '/graph/db-col-score-list',
+    component: () => import('@/views/DBColScoreList.vue')
   },
-
   {
-    path: '/graph/db',
-    component: () => import('@/views/DbView.vue')
+    path: '/graph/db-user',
+    component: () => import('@/views/DBUserGraphView.vue')
+  },
+  {
+    path: '/graph/db-manage',
+    component: () => import('@/views/ManageDBView.vue')
   },
 ]
 

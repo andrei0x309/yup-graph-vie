@@ -6,25 +6,23 @@ const DB_NAME = 'YUPGraph'
 
 const MAIN_TABLE_QUERY = `
     CREATE TABLE IF NOT EXISTS "${GRAPH_SNAPSHOTS_TABLE}" (
-        "rowid" INTEGER NOT NULL,
+        "rowid" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         "user" TEXT NULL DEFAULT NULL,
         "graph_user_links" TEXT NULL DEFAULT NULL,
         "graph_user_analytics" TEXT NULL DEFAULT NULL,
         "collusion_score" REAL NULL DEFAULT NULL,
         "no_user_posts" REAL NULL DEFAULT NULL,
         "no_user_analytics_links" REAL NULL DEFAULT NULL,
-        "date_created" DATETIME NULL DEFAULT NULL,
-        PRIMARY KEY ("rowid")
+        "date_created" DATETIME NULL DEFAULT NULL
     );
     `;
 
 const COL_SCORE_TABLE_QUERY = `
     CREATE TABLE IF NOT EXISTS "${COL_SCORE_SNAPSHOTS_TABLE}" ( 
-        "rowid" INTEGER NOT NULL,
+        "rowid" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         "users" TEXT NULL DEFAULT NULL,
         "collusion_scores" TEXT NULL DEFAULT NULL,
-        "date_created" DATETIME NULL DEFAULT NULL,
-        PRIMARY KEY ("rowid")
+        "date_created" DATETIME NULL DEFAULT NULL
     );`
 
 async function deleteDatabase (db: SQLiteDBConnection): Promise<void> {

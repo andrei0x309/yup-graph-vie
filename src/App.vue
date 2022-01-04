@@ -34,7 +34,7 @@
 import { IonApp, IonContent, IonIcon, IonItem, IonLabel, IonList, IonListHeader, IonMenu, IonMenuToggle, IonNote, IonRouterOutlet, IonSplitPane } from '@ionic/vue';
 import { defineComponent, ref, getCurrentInstance, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { settings, cube } from 'ionicons/icons';
+import { settings, cube, personOutline, peopleOutline } from 'ionicons/icons';
 import { useSQLite } from 'vue-sqlite-hook';
 
 export default defineComponent({
@@ -57,31 +57,39 @@ export default defineComponent({
   setup () {
     const app = getCurrentInstance();
     const selectedIndex = ref(0);
+
     const appPages = [
       {
         title: 'User Graph Explorer',
         url: '/graph/index',
-        iosIcon: settings,
-        mdIcon: settings
+        iosIcon: personOutline,
+        mdIcon: personOutline
       },
       {
         title: 'DB Entries For Graph',
-        url: '/graph/db',
+        url: '/graph/db-user',
         iosIcon: cube,
         mdIcon: cube
       },
       {
-        title: 'CScore User List Compute',
+        title: 'CScore For User List',
         url: '/graph/col-score-list',
-        iosIcon: settings,
-        mdIcon: settings
+        iosIcon: peopleOutline,
+        mdIcon: peopleOutline
       },
       {
         title: 'DB Entries For CScore',
-        url: '/graph/db-cscore',
+        url: '/graph/db-col-score-list',
+        iosIcon: cube,
+        mdIcon: cube
+      },
+      {
+        title: 'Manage DB',
+        url: '/graph/db-manage',
         iosIcon: settings,
         mdIcon: settings
       },
+
 
     ];
 
@@ -117,21 +125,17 @@ export default defineComponent({
       });
     }
 
-      watch(
+    watch(
       () => route.path,
       async () => {
-       const path = window.location.pathname.split('graph/')[1].split('/')[0];
-       selectedIndex.value = appPages.findIndex(page => page.url.split('graph/')[1].toLowerCase() === path.toLowerCase());
+        const path = window.location.pathname.split('graph/')[1].split('/')[0];
+        selectedIndex.value = appPages.findIndex(page => page.url.split('graph/')[1].toLowerCase() === path.toLowerCase());
       }
     )
 
     return {
       selectedIndex,
       appPages,
-      //labels,
-      //settings, 
-      //isSelected: (url: string) => url === route.path ? 'selected' : '',
-      route
     }
   }
 });
